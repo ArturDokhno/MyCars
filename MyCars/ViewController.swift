@@ -21,7 +21,20 @@ class ViewController: UIViewController {
         return df
     }()
     
-    @IBOutlet weak var segmentedControl: UISegmentedControl!
+    @IBOutlet weak var segmentedControl: UISegmentedControl! {
+        didSet {
+            updateSegmentedControll()
+            segmentedControl.selectedSegmentTintColor = .white
+            
+            let whiteTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+            let blackTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
+            
+            UISegmentedControl.appearance().setTitleTextAttributes(whiteTitleTextAttributes,
+                                                                   for: .normal)
+            UISegmentedControl.appearance().setTitleTextAttributes(blackTitleTextAttributes,
+                                                                   for: .selected)
+        }
+    }
     @IBOutlet weak var markLabel: UILabel!
     @IBOutlet weak var modelLabel: UILabel!
     @IBOutlet weak var carImageView: UIImageView!
@@ -31,7 +44,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var myChoiceImageView: UIImageView!
     
     @IBAction func segmentedCtrlPressed(_ sender: UISegmentedControl) {
-        
+        updateSegmentedControll()
     }
     
     @IBAction func startEnginePressed(_ sender: UIButton) {
@@ -50,6 +63,7 @@ class ViewController: UIViewController {
         let alertController = UIAlertController(title: "Rate it",
                                                 message: "Rate this car please",
                                                 preferredStyle: .alert)
+        
         let rateAction = UIAlertAction(title: "Rate",
                                        style: .default) { action in
             if let text = alertController.textFields?.first?.text {
@@ -68,6 +82,20 @@ class ViewController: UIViewController {
         alertController.addAction(cancelAction)
         
         present(alertController, animated: true, completion: nil)
+    }
+    
+    private func updateSegmentedControll() {
+        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
+        let mark = segmentedControl.titleForSegment(at: segmentedControl.selectedSegmentIndex)
+        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
+        
+        do {
+            let result = try context.fetch(fetchRequest)
+            car = result.first
+            insertDataFrom(selectedCar: car!)
+        } catch let error as NSError {
+            print(error.localizedDescription)
+        }
     }
     
     private func update(rating: Double) {
@@ -101,7 +129,6 @@ class ViewController: UIViewController {
         myChoiceImageView.isHidden = !(car.myChoice)
         ratingLabel.text = "Rating: \(car.rating) / 10"
         numberOfTripsLabel.text = "Number of trips: \(car.timesDriven)"
-        
         lastTimeStartedLabel.text = "Last time started: \(dateFormatter.string(from: car.lastStarted!))"
         segmentedControl.backgroundColor  = car.tintColor as? UIColor
     }
@@ -120,7 +147,6 @@ class ViewController: UIViewController {
         }
         
         guard records == 0 else { return}
-        
         guard let pathToFile = Bundle.main.path(forResource: "data", ofType: "plist"),
               let dataArray = NSArray(contentsOfFile: pathToFile) else { return }
         
@@ -162,18 +188,6 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         getDataFromFile()
-        
-        let fetchRequest: NSFetchRequest<Car> = Car.fetchRequest()
-        let mark = segmentedControl.titleForSegment(at: 0)
-        fetchRequest.predicate = NSPredicate(format: "mark == %@", mark!)
-        
-        do {
-            let result = try context.fetch(fetchRequest)
-            car = result.first
-            insertDataFrom(selectedCar: car!)
-        } catch let error as NSError {
-            print(error.localizedDescription)
-        }
     }
     
 }
